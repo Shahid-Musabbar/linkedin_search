@@ -38,12 +38,53 @@ def _check_and_increment_usage():
         json.dump(usage, f)
 
 
-def search_linkedin_company(company_name: str, num_results: int = 5) -> List[Dict]:
+def search_linkedin_profile(name: str, num_results: int = 10) -> List[Dict]:
+    """
+    Searches Google for LinkedIn profiles using:
+    site:linkedin.com/in <name>
+
+    Enforces a hard limit of 100 API calls per day.
+    Args:
+        name (str): The name of the person to search for.
+        num_results (int): Number of search results to return (max 10).
+    """
+
+    _check_and_increment_usage()  # 🔐 protect quota
+
+    query = f"site:linkedin.com/in {name}"
+
+    url = "https://www.googleapis.com/customsearch/v1"
+    params = {
+        "key": GOOGLE_API_KEY,
+        "cx": SEARCH_ENGINE_ID,
+        "q": query,
+        "num": min(num_results, 10)
+    }
+
+    response = requests.get(url, params=params)
+    response.raise_for_status()
+
+    data = response.json()
+
+    results = []
+    for item in data.get("items", []):
+        results.append({
+            "title": item.get("title"),
+            "link": item.get("link"),
+            "snippet": item.get("snippet")
+        })
+
+    return results
+
+def search_linkedin_company(company_name: str, num_results: int = 10) -> List[Dict]:
     """
     Searches Google for LinkedIn company pages using:
     site:linkedin.com/company <company_name>
 
     Enforces a hard limit of 100 API calls per day.
+    Args:
+        company_name (str): The name of the company to search for.
+        num_results (int): Number of search results to return (max 10).
     """
 
     _check_and_increment_usage()  # 🔐 protect quota
